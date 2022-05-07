@@ -1,11 +1,3 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
 library(rsconnect)
 library(shiny)
 library(dplyr)
@@ -15,16 +7,15 @@ library(mapproj)
 library(shinydashboard)
 library(tidyr)
 library(formattable)
-# Part 1. Data Prepartion
+
+
+# Data Preparation
 flight_sub <- read.csv("flights.csv")
 airport <- read.csv("airports.csv")
 airline <- read.csv("airlines.csv")
 state_location <- read.csv("states_loc.csv")
 us <- map_data("state")
 
-# Subset for easier computation
-#flight_sub <- flight %>% filter(AIRLINE %in% c('VX','AS','HA','F9',"NK","MQ")) 
-#write.csv(flight_sub, file = "flight_sub_v2.csv")
 
 # Create new feature
 flight_sub$DELAY <- ifelse(flight_sub$ARRIVAL_DELAY > 0, 1, 0)
@@ -36,16 +27,16 @@ colnames(flight_all)[colnames(flight_all)=="SECURITY_DELAY"] <- "Caused_by_Secur
 colnames(flight_all)[colnames(flight_all)=="AIRLINE_DELAY"] <- "Caused_by_Airline"
 colnames(flight_all)[colnames(flight_all)=="WEATHER_DELAY"] <- "Caused_by_Weather"
 
-# Part 2. UI Design
+#  UI Design
 
 # Header
-header <- dashboardHeader(title = "Flight Dashboard")
+header <- dashboardHeader(title = "Shiny Project")
 
 # Sidebar
 sidebar <- dashboardSidebar(
   sidebarMenu(id = "sidebarmenu",
-              menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
               menuItem("Map", tabName = "map", icon = icon("map")),
+              menuItem("Dashboards", tabName = "dashboard", icon = icon("dashboard")),
               conditionalPanel("input.sidebarmenu === 'dashboard'",
                                selectInput("month", "Month:",
                                            choices=list("All year" = 99, "Jan" = 1,"Feb" = 2,"Mar" = 3,
@@ -76,13 +67,13 @@ frow1 <- fluidRow(
 frow2 <- fluidRow( 
   box(
     title = "Delay Rate"
-    ,status = "primary"
+    ,status = "warning"
     ,solidHeader = TRUE 
     ,collapsible = TRUE 
     ,plotOutput("montly_delay", click = "plot_click")),
   box(
     title = "Delay Reason"
-    ,status = "primary"
+    ,status = "warning"
     ,solidHeader = TRUE 
     ,collapsible = TRUE 
     ,plotOutput("reason_delay", click = "plot_click"))
@@ -91,7 +82,7 @@ frow2 <- fluidRow(
 frow_map <- fluidRow(
   box(
     title = "KPI in State Level"
-    ,status = "primary"
+    ,status = "danger"
     ,solidHeader = TRUE 
     ,collapsible = TRUE 
     ,plotOutput("map_state")
@@ -111,10 +102,10 @@ body <- dashboardBody(
   )
 )
 
-# Put everything together
-ui <- dashboardPage(title = 'Flight overview', header, sidebar, body, skin='blue')
 
-# Part 3. Server logic 
+ui <- dashboardPage(title = 'Flight overview', header, sidebar, body, skin='red')
+
+# Server logic 
 server <- shinyServer(function(input, output) {
   
   data <- reactive({
@@ -132,7 +123,7 @@ server <- shinyServer(function(input, output) {
     valueBox(
       formatC(total_number_value, format = "d", big.mark = ',')
       ,subtitle = "Number of flights"
-      ,color = 'olive'
+      ,color = 'red'
       ,icon = icon("plane", lib='font-awesome')
     )
   })
@@ -142,7 +133,7 @@ server <- shinyServer(function(input, output) {
     valueBox(
       percent(delay_rate_value)
       ,subtitle = "Delay Rate"
-      ,color = 'yellow'
+      ,color = 'orange'
       ,icon = icon("bell", lib= 'font-awesome')
     )
   })
@@ -152,7 +143,7 @@ server <- shinyServer(function(input, output) {
     valueBox(
       percent(cancel_rate_value)
       ,subtitle = "Cancel Rate"
-      ,color = 'red'
+      ,color = 'yellow'
       ,icon = icon("bell-slash", lib= 'font-awesome')
     )
   })  
@@ -163,8 +154,8 @@ server <- shinyServer(function(input, output) {
         group_by(MONTH) %>%
         summarise(p_delay = mean(DELAY, na.rm=TRUE)) %>%
         ggplot() +
-        geom_line(aes(x=MONTH, y=p_delay),color="steelblue") +
-        geom_point(aes(x=MONTH, y=p_delay), size=2, color="steelblue") +
+        geom_line(aes(x=MONTH, y=p_delay),color="red") +
+        geom_point(aes(x=MONTH, y=p_delay), size=2, color="red") +
         theme_bw() +
         labs(x="Month", y="Delay Rate") +
         scale_x_continuous(limits=c(1,12), breaks=c(1,3,5,7,9,11)) +
@@ -175,8 +166,8 @@ server <- shinyServer(function(input, output) {
         group_by(DAY) %>%
         summarise(p_delay = mean(DELAY, na.rm=TRUE)) %>%
         ggplot() +
-        geom_line(aes(x=DAY, y=p_delay),color="steelblue") +
-        geom_point(aes(x=DAY, y=p_delay), size=2, color="steelblue") +
+        geom_line(aes(x=DAY, y=p_delay),color="red") +
+        geom_point(aes(x=DAY, y=p_delay), size=2, color="red") +
         theme_bw() +
         labs(x="Day", y="Delay Rate") +
         scale_x_continuous(limits=c(1,31), breaks=c(1,7,14,21,27)) +
@@ -192,7 +183,7 @@ server <- shinyServer(function(input, output) {
       group_by(key) %>%
       summarise(p_incidence = n()) %>%
       ggplot() + 
-      geom_bar(aes(x = reorder(key,p_incidence), y = p_incidence/sum(p_incidence)), fill="steelblue",stat = "identity", width = 0.5) + 
+      geom_bar(aes(x = reorder(key,p_incidence), y = p_incidence/sum(p_incidence)), fill="red",stat = "identity", width = 0.5) + 
       coord_flip() + 
       theme_bw() +
       labs(x="Frequency", y="Delay Reason") 
@@ -231,5 +222,5 @@ server <- shinyServer(function(input, output) {
   })
 })
 
-# Run the application 
+# Running the application 
 shinyApp(ui = ui, server = server)
